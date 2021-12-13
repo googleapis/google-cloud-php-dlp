@@ -14,31 +14,25 @@
 
 """This script is used to synthesize generated parts of this library."""
 
-import subprocess
-import synthtool as s
-import synthtool.gcp as gcp
 import logging
+from pathlib import Path
+import subprocess
+
+import synthtool as s
+from synthtool.languages import php
+from synthtool import _tracked_paths
 
 logging.basicConfig(level=logging.DEBUG)
 
-gapic = gcp.GAPICBazel()
-common = gcp.CommonTemplates()
+src = Path(f"../{php.STAGING_DIR}/Dlp").resolve()
+dest = Path().resolve()
 
-library = gapic.php_library(
-    service='dlp',
-    version='v2',
-    bazel_target='//google/privacy/dlp/v2:google-cloud-privacy-dlp-v2-php'
-)
+# Added so that we can pass copy_excludes in the owlbot_main() call
+_tracked_paths.add(src)
 
-# copy all src including partial veneer classes
-s.move(library / 'src')
+php.owlbot_main(src=src, dest=dest)
 
-# copy proto files to src also
-s.move(library / 'proto/src/Google/Cloud/Dlp', 'src/')
-s.move(library / 'tests/')
 
-# copy GPBMetadata file to metadata
-s.move(library / 'proto/src/GPBMetadata/Google/Privacy/Dlp', 'metadata/')
 
 # document and utilize apiEndpoint instead of serviceAddress
 s.replace(
@@ -63,20 +57,6 @@ s.replace(
     'src/V2/**/*Client.php',
     r'^(\s+\*\n)?\s+\*\s@experimental\n',
     '')
-
-# fix year
-s.replace(
-    '**/Gapic/*GapicClient.php',
-    r'Copyright \d{4}',
-    'Copyright 2018')
-s.replace(
-    '**/V2/DlpServiceClient.php',
-    r'Copyright \d{4}',
-    'Copyright 2018')
-s.replace(
-    'tests/**/V2/*Test.php',
-    r'Copyright \d{4}',
-    'Copyright 2018')
 
 # Fix missing documentation. See https://github.com/googleapis/gapic-generator/issues/1915
 s.replace(
